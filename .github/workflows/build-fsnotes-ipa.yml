@@ -15,7 +15,7 @@ jobs:
 
       - name: Unpack source
         run: |
-          unzip -q FSNotes-Open-Filza-source.zip
+          unzip -q FSNotes-Open-Filza-GitHub-Package.zip
           cd fsnotes-master
           xcodebuild -project "FSNotes.xcodeproj" \
             -scheme "FSNotes iOS" \
