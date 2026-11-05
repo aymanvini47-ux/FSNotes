@@ -1,0 +1,54 @@
+name: Build FSNotes IPA for iOS 15
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Get FSNotes iOS 15-compatible source
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch 6.10.2 https://github.com/glushchenko/fsnotes.git fsnotes-source
+
+      - name: Install CocoaPods dependencies
+        working-directory: fsnotes-source
+        run: |
+          set -euo pipefail
+          sudo gem install cocoapods
+          pod install --repo-update
+
+      - name: Build FSNotes iOS
+        working-directory: fsnotes-source
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -workspace "FSNotes.xcworkspace" \
+            -scheme "FSNotes iOS" \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath "$GITHUB_WORKSPACE/build" \
+            IPHONEOS_DEPLOYMENT_TARGET=14.0 \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package IPA
+        run: |
+          set -euo pipefail
+          APP_PATH="$GITHUB_WORKSPACE/build/Build/Products/Release-iphoneos/FSNotes iOS.app"
+          test -d "$APP_PATH"
+          mkdir -p "$GITHUB_WORKSPACE/Payload"
+          cp -R "$APP_PATH" "$GITHUB_WORKSPACE/Payload/"
+          cd "$GITHUB_WORKSPACE"
+          /usr/bin/zip -qry FSNotes-Base-iOS15.ipa Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FSNotes-Base-iOS15
+          path: FSNotes-Base-iOS15.ipa
+          if-no-files-found: error
